@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>내 교실 평가 스타일(MBTI) 1분 진단</title>
+<style>
+  :root {
+    --bg: #f1f5f9;
+    --primary: #2563eb;
+    --text: #0f172a;
+    --sub: #475569;
+  }
+  * { box-sizing: border-box; font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif; }
+  body {
+    margin: 0; padding: 16px; background: var(--bg); color: var(--text);
+    display: flex; justify-content: center; align-items: center; min-height: 100vh;
+  }
+  .app {
+    width: 100%; max-width: 480px; background: white; border-radius: 24px;
+    padding: 28px 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.06);
+  }
+  .badge {
+    display: inline-block; background: #eff6ff; color: var(--primary);
+    font-weight: 700; font-size: 0.82rem; padding: 5px 12px; border-radius: 999px; margin-bottom: 12px;
+  }
+  h1 { margin: 0 0 8px 0; font-size: 1.45rem; line-height: 1.35; letter-spacing: -0.4px; }
+  p.desc { margin: 0 0 24px 0; color: var(--sub); font-size: 0.95rem; line-height: 1.5; }
+
+  /* 진행바 */
+  .progress-wrap { width: 100%; height: 8px; background: #e2e8f0; border-radius: 999px; margin-bottom: 20px; overflow: hidden; }
+  .progress-bar { height: 100%; width: 33.3%; background: var(--primary); transition: width 0.3s ease; }
+
+  /* 질문 & 선택지 */
+  .q-num { font-size: 0.85rem; font-weight: 700; color: var(--primary); margin-bottom: 6px; }
+  .q-title { font-size: 1.18rem; font-weight: 700; margin: 0 0 18px 0; line-height: 1.45; }
+  .options { display: flex; flex-direction: column; gap: 12px; }
+  .opt-btn {
+    width: 100%; text-align: left; background: #f8fafc; border: 2px solid #e2e8f0;
+    padding: 16px; border-radius: 16px; font-size: 0.96rem; font-weight: 600; color: #1e293b;
+    cursor: pointer; transition: 0.18s; line-height: 1.45;
+  }
+  .opt-btn:hover, .opt-btn:active { border-color: var(--primary); background: #eff6ff; transform: translateY(-2px); }
+
+  /* 결과 화면 */
+  .result-card { text-align: center; animation: fadeIn 0.4s ease; }
+  .res-emoji { font-size: 3.4rem; margin-bottom: 8px; }
+  .res-sub { font-size: 0.88rem; font-weight: 700; color: var(--primary); margin-bottom: 4px; }
+  .res-title { font-size: 1.5rem; font-weight: 800; margin: 0 0 12px 0; }
+  .res-desc { font-size: 0.94rem; color: #334155; line-height: 1.55; margin-bottom: 20px; text-align: left; background: #f8fafc; padding: 14px 16px; border-radius: 14px; }
+
+  .rx-box {
+    background: #0f172a; color: white; border-radius: 16px; padding: 18px; text-align: left; margin-bottom: 18px;
+  }
+  .rx-label { font-size: 0.8rem; font-weight: 700; color: #fde047; margin-bottom: 6px; display: block; }
+  .rx-title { font-size: 1.05rem; font-weight: 700; margin: 0 0 8px 0; }
+  .rx-tool {
+    background: rgba(255,255,255,0.12); padding: 10px 12px; border-radius: 10px;
+    font-size: 0.88rem; line-height: 1.45; color: #f1f5f9;
+  }
+
+  .share-tip { font-size: 0.88rem; font-weight: 600; color: #059669; margin-bottom: 16px; }
+  .retry-btn {
+    width: 100%; background: #e2e8f0; color: #334155; border: none; padding: 13px;
+    border-radius: 12px; font-weight: 700; font-size: 0.95rem; cursor: pointer;
+  }
+  .retry-btn:hover { background: #cbd5e1; }
+  .hidden { display: none; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- 퀴즈 영역 -->
+  <div id="quizSection">
+    <span class="badge">⏱️ 1분 셀프 진단</span>
+    <h1>내 교실 평가 성향은?</h1>
+    <p class="desc">평소 내 수업 모습과 가장 가까운 보기를 골라보세요.</p>
+
+    <div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
+    <div class="q-num" id="qNum">질문 1 / 3</div>
+    <h2 class="q-title" id="qTitle"></h2>
+    <div class="options" id="optionsBox"></div>
+  </div>
+
+  <!-- 결과 영역 -->
+  <div id="resultSection" class="result-card hidden">
+    <div class="res-emoji" id="resEmoji"></div>
+    <div class="res-sub" id="resSub"></div>
+    <h2 class="res-title" id="resTitle"></h2>
+    <div class="res-desc" id="resDesc"></div>
+
+    <div class="rx-box">
+      <span class="rx-label">💊 오늘 연수에서 챙겨갈 추천 처방</span>
+      <div class="rx-title" id="rxTitle"></div>
+      <div class="rx-tool" id="rxTool"></div>
+    </div>
+
+    <div class="share-tip">💬 옆자리 선생님과 결과 화면을 서로 보여주세요!</div>
+    <button class="retry-btn" onclick="restart()">다시 테스트하기</button>
+  </div>
+</div>
+
+<script>
+  const questions = [
+    {
+      q: "모둠 활동 시간, 아이들이 자료를 찾느라 헤매고 있을 때 나는?",
+      opts: [
+        { text: "모둠마다 돌아다니며 즉석에서 힌트와 조언을 폭풍 피드백한다.", type: "for" },
+        { text: "잠시 멈추고 아이들끼리 '우리가 지금 잘하고 있나?' 중간 점검표를 체크하게 한다.", type: "as" },
+        { text: "활동이 끝난 뒤 제출한 결과물을 보고 어느 부분이 부족했는지 꼼꼼히 기록한다.", type: "of" }
+      ]
+    },
+    {
+      q: "단원 중간(소주제 마무리) 단계에서 내가 가장 중요하게 보는 것은?",
+      opts: [
+        { text: "개념을 제대로 이해했는지 활동지를 보며 맞춤형 코멘트를 달아주는 것", type: "for" },
+        { text: "친구와 서로의 결과물을 바꿔 보며 칭찬과 보완점을 나누는 시간", type: "as" },
+        { text: "수행 수준을 정확히 파악해서 과정중심평가 기록으로 남겨두는 것", type: "of" }
+      ]
+    },
+    {
+      q: "한 단원(프로젝트)을 모두 마칠 때, 가장 뿌듯한 순간은?",
+      opts: [
+        { text: "초안 때보다 내 피드백을 반영해 훨씬 성장한 아이들의 글을 볼 때", type: "for" },
+        { text: "아이들이 스스로 '다음 단원엔 이걸 더 잘하고 싶어요'라고 성찰할 때", type: "as" },
+        { text: "배운 개념을 연결해 쓴 최종 에세이와 포트폴리오가 차곡차곡 쌓였을 때", type: "of" }
+      ]
+    }
+  ];
+
+  const results = {
+    for: {
+      emoji: "📢",
+      sub: "[학습을 위한 평가 (Assessment for Learning)] 강점",
+      title: "열정 피드백러형",
+      desc: "수업 중 아이들의 반응을 놓치지 않고 즉각적인 도움과 방향을 제시하는 교실의 내비게이터! 교사의 세심한 관찰과 피드백이 살아있는 수업을 만드십니다.",
+      rxTitle: "보완 포인트: '학습으로서의 평가' (학생 주도 성찰)",
+      rxTool: "📌 매트릭스 추천 도구: 탐구 나침반 활용 성찰 · 준거 기반 자기/동료평가 (선생님의 피드백 에너지를 아이들 스스로 점검하는 힘으로 나누어 보세요!)"
+    },
+    as: {
+      emoji: "🪞",
+      sub: "[학습으로서의 평가 (Assessment as Learning)] 강점",
+      title: "거울 성찰 코치형",
+      title: "거울 성찰 코치형",
+      desc: "아이들 스스로 배움을 돌아보고 친구와 피드백을 주고받게 만드는 메타인지 촉진자! 학생 주도성(Agency)이 살아 숨 쉬는 교실을 운영하십니다.",
+      rxTitle: "보완 포인트: '학습의 평가' (개념 연결 및 체계적 기록)",
+      rxTool: "📌 매트릭스 추천 도구: 지식 에세이 · 학습 포트폴리오 (아이들의 자기 성찰 기록을 단원 최종 개념 연결 결과물과 엮어 보세요!)"
+    },
+    of: {
+      emoji: "🗂️",
+      sub: "[학습의 평가 (Assessment of Learning)] 강점",
+      title: "데이터 수집가형",
+      desc: "단원의 핵심 개념과 성취 수준을 정확히 포착하고 배움의 증거를 체계적으로 남기는 전략가! 교육과정-수업-평가의 일관성이 탄탄한 교실을 만드십니다.",
+      rxTitle: "보완 포인트: '학습을 위한 평가' (차시·LOI 중간 피드백)",
+      rxTool: "📌 매트릭스 추천 도구: 학습 활동 관찰 · ATL 성장 스펙트럼 피드백 (최종 결과물 전, 중간 과정에서 작은 피드백 루틴을 한 스푼 얹어 보세요!)"
+    }
+  };
+
+  let step = 0;
+  let scores = { for: 0, as: 0, of: 0 };
+
+  function render() {
+    const q = questions[step];
+    document.getElementById('progressBar').style.width = `${((step + 1) / questions.length) * 100}%`;
+    document.getElementById('qNum').innerText = `질문 ${step + 1} / ${questions.length}`;
+    document.getElementById('qTitle').innerText = q.q;
+
+    const box = document.getElementById('optionsBox');
+    box.innerHTML = '';
+    q.opts.forEach(opt => {
+      const btn = document.createElement('button');
+      btn.className = 'opt-btn';
+      btn.innerText = opt.text;
+      btn.onclick = () => selectOpt(opt.type);
+      box.appendChild(btn);
+    });
+  }
+
+  function selectOpt(type) {
+    scores[type]++;
+    if (step < questions.length - 1) {
+      step++;
+      render();
+    } else {
+      showResult();
+    }
+  }
+
+  function showResult() {
+    document.getElementById('quizSection').classList.add('hidden');
+    document.getElementById('resultSection').classList.remove('hidden');
+
+    // 최고점 유형 판별
+    const topType = Object.keys(scores).reduce((a, b) => scores[a] >= scores[b] ? a : b);
+    const r = results[topType];
+
+    document.getElementById('resEmoji').innerText = r.emoji;
+    document.getElementById('resSub').innerText = r.sub;
+    document.getElementById('resTitle').innerText = r.title;
+    document.getElementById('resDesc').innerText = r.desc;
+    document.getElementById('rxTitle').innerText = r.rxTitle;
+    document.getElementById('rxTool').innerText = r.rxTool;
+  }
+
+  function restart() {
+    step = 0;
+    scores = { for: 0, as: 0, of: 0 };
+    document.getElementById('resultSection').classList.add('hidden');
+    document.getElementById('quizSection').classList.remove('hidden');
+    render();
+  }
+
+  render();
+</script>
+</body>
+</html>
